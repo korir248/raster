@@ -2,11 +2,23 @@ use std::path::Path;
 
 use image::{ImageBuffer, Rgb, RgbImage};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Copy, Clone)]
 pub struct Float3 {
     pub x: f64,
     pub y: f64,
     pub z: f64,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Float2 {
+    pub x: f64,
+    pub y: f64,
+}
+
+impl Float2 {
+    pub fn new(x: f64, y: f64) -> Self {
+        Self { x, y }
+    }
 }
 
 impl Float3 {
@@ -30,13 +42,17 @@ pub fn create_test_image() -> Grid {
 
     let mut image: [[Float3; WIDTH]; HEIGHT] = [[Float3::new(0.0, 0.0, 0.0); WIDTH]; HEIGHT];
 
+    let a = Float2::new(0.2 * WIDTH as f64, 0.2 * HEIGHT as f64);
+    let b = Float2::new(0.7 * WIDTH as f64, 0.4 * HEIGHT as f64);
+    let c = Float2::new(0.4 * WIDTH as f64, 0.8 * HEIGHT as f64);
+
     for y in 0..HEIGHT {
         for x in 0..WIDTH {
-            let r = x as f64 / (WIDTH - 1) as f64;
-            let g = y as f64 / (HEIGHT - 1) as f64;
-            let b = 0.0;
+            let p = Float2::new(x as f64, y as f64);
 
-            image[x][y] = Float3::new(r, g, b);
+            if is_point_in_triangle(p, (a, b, c).into()) {
+                image[x][y] = Float3::new(0.0, 0.0, 1.0);
+            }
         }
     }
 
@@ -49,7 +65,6 @@ pub fn save_as_bmp(image: &[[Float3; 64]; 64], path: &str) -> Result<(), image::
 
     let mut img_buffer: RgbImage = ImageBuffer::new(width, height);
 
-    // Fill the image buffer
     for (y, row) in image.iter().enumerate() {
         for (x, pixel) in row.iter().enumerate() {
             let rgb = pixel.to_rgb();
@@ -57,6 +72,19 @@ pub fn save_as_bmp(image: &[[Float3; 64]; 64], path: &str) -> Result<(), image::
         }
     }
 
-    // Save as BMP
     img_buffer.save(Path::new(path))
+}
+
+fn cross_product(a: Float2, b: Float2, p: Float2) -> f64 {
+    (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)
+}
+
+/// Returns true if the point is inside the triangle.
+pub fn is_point_in_triangle(p: Float2, triangle: [Float2; 3]) -> bool {
+    let [a, b, c] = triangle;
+    let d1 = cross_product(a, b, p);
+    let d2 = cross_product(b, c, p);
+    let d3 = cross_product(c, a, p);
+
+    (d1 * d2 >= 0.0) && (d2 * d3 >= 0.0)
 }
