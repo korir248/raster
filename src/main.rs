@@ -1,9 +1,13 @@
-use raster::{create_test_image, create_test_images, save_as_bmp};
+use raster::{create_test_images, render, save_as_bmp, update_positions};
 
 fn main() {
-    let image = create_test_image();
-    save_as_bmp(&image, "new.bmp").unwrap();
+    let (mut points, velocities, triangle_cols, mut image) = create_test_images();
 
-    let images= create_test_images();
-    save_as_bmp(&images, "multiple.bmp").unwrap();
+    for frame in 0..100 {
+        update_positions(&mut points, &velocities);
+        render(&points, &triangle_cols, &mut image);
+
+        let path = format!("frame_{:03}.bmp", frame);
+        save_as_bmp(&image, &path).unwrap();
+    }
 }
